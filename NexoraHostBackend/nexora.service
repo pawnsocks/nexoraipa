@@ -1,0 +1,22 @@
+[Unit]
+Description=Nexora Host Private Dev Backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nexora
+Group=nexora
+WorkingDirectory=/opt/nexora/backend
+EnvironmentFile=/opt/nexora/backend/.env
+ExecStart=/usr/bin/node /opt/nexora/backend/server.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/nexora
+
+[Install]
+WantedBy=multi-user.target

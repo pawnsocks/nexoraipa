@@ -1,0 +1,71 @@
+name: Build Nexora Host IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apply Nexora Host remote-first upgrade
+        run: |
+          # Keep the proven iOS 16 / Swift 6 compile fixes.
+          cp -f SystemMetrics.swift PocketHost/Core/SystemMetrics.swift
+          cp -f TerminalView.swift PocketHost/UI/TerminalView.swift
+          cp -f FilesView.swift PocketHost/UI/FilesView.swift
+
+          # Replace the old local-hosting MVP with the private remote-first client.
+          cp -f AppModel.swift PocketHost/App/AppModel.swift
+          cp -f Models.swift PocketHost/Core/Models.swift
+          cp -f RuntimeSupervisor.swift PocketHost/Runtimes/RuntimeSupervisor.swift
+          cp -f ProjectManager.swift PocketHost/Projects/ProjectManager.swift
+          cp -f AIProviderService.swift PocketHost/AI/AIProviderService.swift
+          cp -f AIView.swift PocketHost/UI/AIView.swift
+          cp -f ProjectsView.swift PocketHost/UI/ProjectsView.swift
+          cp -f RuntimesView.swift PocketHost/UI/RuntimesView.swift
+          cp -f RootView.swift PocketHost/UI/RootView.swift
+
+          # Keep the internal target name stable so the proven build does not break,
+          # but expose the actual app brand everywhere on iPhone.
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Nexora Host" PocketHost/Info.plist || \
+            /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Nexora Host" PocketHost/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName Nexora Host" PocketHost/Info.plist || \
+            /usr/libexec/PlistBuddy -c "Add :CFBundleName string Nexora Host" PocketHost/Info.plist
+
+          # Install the Nexora Host app icon into the existing Xcode asset catalog.
+          rm -rf PocketHost/Assets.xcassets/AppIcon.appiconset
+          cp -R AppIcon.appiconset PocketHost/Assets.xcassets/AppIcon.appiconset
+
+          echo "Nexora Host upgrade files + app icon applied"
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+
+      - name: Resolve packages
+        run: |
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project PocketHost.xcodeproj \
+            -scheme PocketHost
+
+      - name: Build unsigned IPA
+        run: |
+          chmod +x Scripts/build-unsigned-ipa.sh
+          ./Scripts/build-unsigned-ipa.sh
+
+          mv build/ipa/PocketHost-unsigned.ipa build/ipa/Nexora-Host-unsigned.ipa
+          shasum -a 256 build/ipa/Nexora-Host-unsigned.ipa > build/ipa/Nexora-Host-unsigned.ipa.sha256
+          rm -f build/ipa/PocketHost-unsigned.ipa.sha256
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexora-Host-iPhone13-unsigned
+          path: |
+            build/ipa/Nexora-Host-unsigned.ipa
+            build/ipa/Nexora-Host-unsigned.ipa.sha256
+          if-no-files-found: error

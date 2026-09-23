@@ -9,7 +9,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Apply PocketHost fixes
+        run: |
+          cp -f SystemMetrics.swift PocketHost/Core/SystemMetrics.swift
+          cp -f RuntimeSupervisor.swift PocketHost/Runtimes/RuntimeSupervisor.swift
+          cp -f TerminalView.swift PocketHost/UI/TerminalView.swift
+          cp -f FilesView.swift PocketHost/UI/FilesView.swift
+
+          echo "Fix files copied:"
+          grep -n "@MainActor" PocketHost/Core/SystemMetrics.swift
+          grep -n "onChange" PocketHost/UI/TerminalView.swift
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
@@ -30,4 +41,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PocketHost-iPhone13-unsigned
-          path: build/ipa/PocketHost-unsigned.ipa
+          path: |
+            build/ipa/PocketHost-unsigned.ipa
+            build/ipa/PocketHost-unsigned.ipa.sha256
+          if-no-files-found: error

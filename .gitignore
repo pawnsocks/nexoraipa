@@ -1,0 +1,11 @@
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# Xcode / CI build output
+build/
+DerivedData/
+*.xcarchive
+*.ipa

@@ -1,0 +1,17 @@
+Nexora Host validation
+======================
+Date: 2026-09-24
+
+PASS: swiftc -parse on 36 Swift source files
+PASS: PocketHost/Info.plist plutil validation
+PASS: PocketHost.xcodeproj/project.pbxproj plutil validation
+PASS: asset catalog Contents.json validation
+PASS: GitHub Actions workflow YAML validation
+PASS: all Swift source references in the Xcode project resolve to files in this repository
+
+NOT RUN HERE:
+- full xcodebuild for iphoneos (requires macOS/Xcode)
+- installation on a physical iPhone/iPad
+- CPython framework embedding/runtime smoke test
+
+The GitHub Actions workflow is included so the full Xcode/IPA compile can run on a macOS runner after upload.

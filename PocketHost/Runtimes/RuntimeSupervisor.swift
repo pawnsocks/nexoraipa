@@ -369,7 +369,7 @@ final class RuntimeSupervisor: @unchecked Sendable {
 
             let globals = Python.dict()
             globals["__name__"] = "__main__"
-            globals["__file__"] = entrypoint ?? "<nexora>"
+            globals["__file__"] = PythonObject(entrypoint ?? "<nexora>")
             let compiled = Python.builtins.compile(code, entrypoint ?? "<nexora>", "exec")
             _ = Python.builtins.exec(compiled, globals, globals)
             let value = buffer.getvalue()

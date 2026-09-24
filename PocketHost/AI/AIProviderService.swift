@@ -158,19 +158,22 @@ final class AIProviderService: @unchecked Sendable {
             req.setValue(key, forHTTPHeaderField: "x-api-key")
             req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
             struct Raw: Decodable { struct Model: Decodable { let id: String }; let data: [Model] }
-            let raw = try JSONDecoder().decode(Raw.self, from: execute(req))
+            let data = try await execute(req)
+            let raw = try JSONDecoder().decode(Raw.self, from: data)
             return raw.data.map { AIModel(id: $0.id, ownedBy: "Anthropic") }.sorted { $0.id < $1.id }
         case .gemini:
             guard let url = URL(string: baseURL + "/models?key=\(query(key))") else { throw AIError.invalidBaseURL }
             struct Raw: Decodable { struct Model: Decodable { let name: String; let supportedGenerationMethods: [String]? }; let models: [Model] }
-            let raw = try JSONDecoder().decode(Raw.self, from: execute(URLRequest(url: url)))
+            let data = try await execute(URLRequest(url: url))
+            let raw = try JSONDecoder().decode(Raw.self, from: data)
             return raw.models.filter { $0.supportedGenerationMethods?.contains("generateContent") ?? true }.map { AIModel(id: $0.name.replacingOccurrences(of: "models/", with: ""), ownedBy: "Google") }.sorted { $0.id < $1.id }
         case .cohere:
             guard let url = URL(string: baseURL + "/v1/models") else { throw AIError.invalidBaseURL }
             var req = URLRequest(url: url)
             req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
             struct Raw: Decodable { struct Model: Decodable { let name: String }; let models: [Model] }
-            let raw = try JSONDecoder().decode(Raw.self, from: execute(req))
+            let data = try await execute(req)
+            let raw = try JSONDecoder().decode(Raw.self, from: data)
             return raw.models.map { AIModel(id: $0.name, ownedBy: "Cohere") }.sorted { $0.id < $1.id }
         }
     }
@@ -210,7 +213,8 @@ final class AIProviderService: @unchecked Sendable {
             req.setValue("https://github.com", forHTTPHeaderField: "HTTP-Referer")
         }
         req.httpBody = try JSONEncoder().encode(Payload(model: model, messages: input.messages, temperature: input.temperature))
-        let raw = try JSONDecoder().decode(Raw.self, from: execute(req))
+        let data = try await execute(req)
+        let raw = try JSONDecoder().decode(Raw.self, from: data)
         guard let message = raw.choices.first?.message else { throw AIError.invalidResponse }
         return .init(model: raw.model ?? model, message: message, id: raw.id)
     }
@@ -229,7 +233,8 @@ final class AIProviderService: @unchecked Sendable {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         struct Raw: Decodable { struct Part: Decodable { let type: String; let text: String? }; let id: String?; let model: String; let content: [Part] }
-        let raw = try JSONDecoder().decode(Raw.self, from: execute(req))
+        let data = try await execute(req)
+        let raw = try JSONDecoder().decode(Raw.self, from: data)
         let text = raw.content.compactMap(\.text).joined(separator: "\n")
         return .init(model: raw.model, message: .init(role: "assistant", content: text), id: raw.id)
     }
@@ -246,7 +251,8 @@ final class AIProviderService: @unchecked Sendable {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         struct Raw: Decodable { struct Candidate: Decodable { struct Content: Decodable { struct Part: Decodable { let text: String? }; let parts: [Part] }; let content: Content }; let candidates: [Candidate] }
-        let raw = try JSONDecoder().decode(Raw.self, from: execute(req))
+        let data = try await execute(req)
+        let raw = try JSONDecoder().decode(Raw.self, from: data)
         guard let first = raw.candidates.first else { throw AIError.invalidResponse }
         return .init(model: model, message: .init(role: "assistant", content: first.content.parts.compactMap(\.text).joined(separator: "\n")), id: nil)
     }
@@ -262,7 +268,8 @@ final class AIProviderService: @unchecked Sendable {
         if let temperature = input.temperature { body["temperature"] = temperature }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         struct Raw: Decodable { struct Message: Decodable { struct Content: Decodable { let type: String; let text: String? }; let content: [Content] }; let id: String?; let message: Message }
-        let raw = try JSONDecoder().decode(Raw.self, from: execute(req))
+        let data = try await execute(req)
+        let raw = try JSONDecoder().decode(Raw.self, from: data)
         return .init(model: model, message: .init(role: "assistant", content: raw.message.content.compactMap(\.text).joined(separator: "\n")), id: raw.id)
     }
 

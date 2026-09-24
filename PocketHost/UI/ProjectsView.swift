@@ -867,11 +867,19 @@ struct NexoraLocalDatabaseView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
                             ForEach(tables, id: \.self) { table in
-                                Button(table) {
-                                    selectedTable = table
-                                    loadTable(table)
+                                if selectedTable == table {
+                                    Button(table) {
+                                        selectedTable = table
+                                        loadTable(table)
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                } else {
+                                    Button(table) {
+                                        selectedTable = table
+                                        loadTable(table)
+                                    }
+                                    .buttonStyle(.bordered)
                                 }
-                                .buttonStyle(selectedTable == table ? .borderedProminent : .bordered)
                             }
                         }
                     }

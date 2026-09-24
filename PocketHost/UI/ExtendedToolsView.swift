@@ -717,7 +717,7 @@ struct NexoraAPIExplorerView: View {
     @State private var method = "GET"
     @State private var url = "https://"
     @State private var headers = ""
-    @State private var body = ""
+    @State private var requestBody = ""
     @State private var response = ""
     @State private var busy = false
 
@@ -736,7 +736,7 @@ struct NexoraAPIExplorerView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                 if method != "GET" && method != "DELETE" {
-                    TextField("JSON / body", text: $body, axis: .vertical)
+                    TextField("JSON / body", text: $requestBody, axis: .vertical)
                         .lineLimit(3...10)
                         .font(.system(.body, design: .monospaced))
                 }
@@ -780,8 +780,8 @@ struct NexoraAPIExplorerView: View {
             guard parts.count == 2 else { continue }
             request.setValue(parts[1].trimmingCharacters(in: .whitespaces), forHTTPHeaderField: parts[0].trimmingCharacters(in: .whitespaces))
         }
-        if method != "GET" && method != "DELETE" && !body.isEmpty {
-            request.httpBody = Data(body.utf8)
+        if method != "GET" && method != "DELETE" && !requestBody.isEmpty {
+            request.httpBody = Data(requestBody.utf8)
             if request.value(forHTTPHeaderField: "Content-Type") == nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         }
 

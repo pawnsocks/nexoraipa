@@ -180,7 +180,7 @@ final class RuntimeSupervisor: @unchecked Sendable {
         do {
             let sys = try Python.attemptImport("sys")
             let io = try Python.attemptImport("io")
-            let buffer = try io.StringIO.throwing.dynamicallyCall()
+            let buffer = io.StringIO()
             let oldOut = sys.stdout
             let oldErr = sys.stderr
             sys.stdout = buffer
@@ -190,8 +190,8 @@ final class RuntimeSupervisor: @unchecked Sendable {
                 sys.stderr = oldErr
             }
             let execFunction = Python.builtins["exec"]
-            _ = try execFunction.throwing.dynamicallyCall(withArguments: [code])
-            let value = try buffer.getvalue.throwing.dynamicallyCall()
+            _ = execFunction(code)
+            let value = buffer.getvalue()
             let output = String(value) ?? "OK"
             if let projectID, !output.isEmpty { logs?.append(projectID: projectID, output) }
             return .init(output: output.isEmpty ? "OK" : output, succeeded: true)
